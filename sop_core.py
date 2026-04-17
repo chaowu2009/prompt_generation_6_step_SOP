@@ -1,3 +1,4 @@
+import json
 import re
 from typing import Any, Dict, List
 
@@ -545,6 +546,71 @@ def build_prompt(current_step_key: str) -> str:
     return ""
 
 
+def render_copy_button(step_key: str, text: str) -> None:
+        button_id = f"copy-btn-{step_key}"
+        escaped_text = json.dumps(text)
+        disabled_attr = "disabled" if not text else ""
+
+        st.components.v1.html(
+                f"""
+<div>
+    <button id="{button_id}" {disabled_attr}
+        style="
+            width: auto;
+            min-width: 96px;
+            height: 2.5rem;
+            border-radius: 10px;
+            border: 1px solid #de8a8a;
+            padding: 0 0.9rem;
+            background: linear-gradient(90deg, #f7caca 0%, #f3b5b5 100%);
+            color: #7a1f1f;
+            font-weight: 600;
+            cursor: pointer;
+        ">
+        Copy
+    </button>
+</div>
+<script>
+    (function() {{
+        const btn = document.getElementById({json.dumps(button_id)});
+        const text = {escaped_text};
+        if (!btn) return;
+        btn.addEventListener('mouseenter', function() {{
+            if (!btn.disabled) btn.style.filter = 'brightness(0.98)';
+        }});
+        btn.addEventListener('mouseleave', function() {{
+            btn.style.filter = 'none';
+        }});
+        if (btn.disabled) {{
+            btn.style.opacity = '0.55';
+            btn.style.cursor = 'not-allowed';
+        }}
+        btn.addEventListener('click', async function() {{
+            const originalText = btn.textContent;
+            try {{
+                await navigator.clipboard.writeText(text);
+                btn.textContent = 'Copied';
+            }} catch (err) {{
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                try {{
+                    document.execCommand('copy');
+                    btn.textContent = 'Copied';
+                }} finally {{
+                    document.body.removeChild(ta);
+                }}
+            }}
+            setTimeout(function() {{ btn.textContent = originalText; }}, 1200);
+        }});
+    }})();
+</script>
+""",
+                height=44,
+        )
+
+
 def render_step_page(step_key: str) -> None:
     apply_global_styles()
     ensure_state()
@@ -583,10 +649,14 @@ def render_step_page(step_key: str) -> None:
         height=420,
     )
 
-    st.download_button(
-        label="Download Prompt (.txt)",
-        data=st.session_state.generated_prompt_by_step[step_key].encode("utf-8"),
-        file_name=f"{step_key}_prompt.txt",
-        mime="text/plain",
-        key=f"download_{step_key}",
-    )
+    output_copy_col, output_download_col = st.columns([1, 1])
+    with output_copy_col:
+        render_copy_button(step_key, st.session_state.generated_prompt_by_step[step_key])
+    with output_download_col:
+        st.download_button(
+            label="Download Prompt (.txt)",
+            data=st.session_state.generated_prompt_by_step[step_key].encode("utf-8"),
+            file_name=f"{step_key}_prompt.txt",
+            mime="text/plain",
+            key=f"download_{step_key}",
+        )
