@@ -178,6 +178,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
         "optional_inputs": [
             "existing files / classes / methods to reuse",
             "target file path or package if known",
+            "sample gherkin content",
         ],
         "outputs": [
             "layer strategy",
