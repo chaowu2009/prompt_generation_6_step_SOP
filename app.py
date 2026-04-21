@@ -8,7 +8,7 @@ apply_global_styles()
 ensure_state()
 
 st.title("Java Test Framework SOP Prompt Generator")
-st.caption("Use the left Pages menu to open step_0 through step_6. No dropdown is used.")
+st.caption("Use the left Pages menu to open step_0 (Shared Context) through step_6 (Close). No dropdown is used.")
 
 st.markdown("### Overall Progress")
 for step_key, config in STEP_CONFIG.items():

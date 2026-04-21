@@ -182,16 +182,17 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "sample gherkin content",
         ],
         "outputs": [
+            "Gherkin file in test_step_3_gherkin.feature",
             "layer strategy",
             "AC-to-test-layer mapping",
             "manual vs automated split",
             "reuse candidates",
             "impacted assets",
-            "risks and gaps",
-            "Gherkin content in test_step_3_feature_file.md",
+            "risks and gaps"
         ],
         "rules": [
-            f"add \"# new step\" on top of the new steps in \"the test_step_3_feature_file.md\" file, double check it.",
+            "you need think of working flow from existing gherkin scenarios for document review process. existing gherkins may from file existing_gherkin_file.feature or from given prompts",
+            f"add a new line \"# new step\" exactly on top of every new step in \"test_step_3_gherkins.feature\" file, double check it. you many have many places to insert such line",
             "add a section in \"test_step_3_output.md\" to summerize new steps created, double check it.",
             "choose the lowest stable layer first",
             "use Selenium only when UI coverage is truly needed",
