@@ -465,7 +465,6 @@ def render_step_form(step_key: str) -> None:
     if uses_fixed_input_mode(step_key):
         if step_inputs:
             st.markdown("### Input")
-            st.caption("Fixed step inputs")
             for field in step_inputs:
                 render_rich_text_line(field, prefix="- ")
 
