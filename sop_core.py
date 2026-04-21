@@ -1,4 +1,5 @@
 import json
+import html
 import re
 from typing import Any, Dict, List
 
@@ -17,7 +18,17 @@ def apply_global_styles() -> None:
     background: linear-gradient(180deg, #f6f8fc 0%, #eef3fb 100%);
 }
 
-h1, h2, h3 {
+h1 {
+    color: #173b63;
+    letter-spacing: 0.2px;
+}
+
+h2 {
+    color: #4f9cff;
+    letter-spacing: 0.2px;
+}
+
+h3 {
     color: #173b63;
     letter-spacing: 0.2px;
 }
@@ -33,6 +44,27 @@ h1, h2, h3 {
     font-weight: 700;
     color: #173b63;
     margin: 8px 0 4px;
+}
+
+.sop-file-name {
+    display: inline-block;
+    color: #1d5fd1;
+    background: #e7f0ff;
+    border: 1px solid #c8dcff;
+    border-radius: 6px;
+    padding: 0 6px;
+    font-weight: 700;
+}
+
+.sop-rich-line {
+    margin: 0.2rem 0;
+}
+
+.sop-prompt-preview {
+    max-height: 420px;
+    overflow: auto;
+    white-space: pre-wrap;
+    color: #173b63;
 }
 
 [data-testid="stTextArea"] textarea {
@@ -191,8 +223,9 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "risks and gaps"
         ],
         "rules": [
-            "you need think of working flow from existing gherkin scenarios for document review process. existing gherkins may from file existing_gherkin_file.feature or from given prompts",
-            f"add a new line \"# new step\" exactly on top of every new step in \"test_step_3_gherkins.feature\" file, double check it. you many have many places to insert such line",
+            "you need think of work flow from existing gherkin scenarios for a document review process, starting from log in.", 
+            "existing gherkins may come from file existing_gherkin_file.feature or from given prompts",
+            f"add a new line \"# new step\" exactly on top of every new step in \"test_step_3_gherkin.feature\" file, double check it. you many have many places to insert such line",
             "add a section in \"test_step_3_output.md\" to summerize new steps created, double check it.",
             "choose the lowest stable layer first",
             "use Selenium only when UI coverage is truly needed",
@@ -207,7 +240,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
         "task": "Plan the minimum framework changes needed to implement Step 3.",
         "inputs": [
             "test_step_3_output.md",
-            "test_step_3_feature_file.md"
+            "test_step_3_gherkin.feature",
         ],
         "optional_inputs": [
             "target classes / methods / file paths if known",
@@ -298,6 +331,27 @@ def default_field_value(field: str) -> str:
     return f"[{field}]"
 
 
+FILE_NAME_PATTERN = re.compile(r"(?<![\w/\\.-])([A-Za-z0-9_().-]+\.(?:md|feature|txt))(?![\w/\\-])")
+
+
+def highlight_file_names(text: str) -> str:
+    escaped = html.escape(text)
+
+    def replace_match(match: re.Match[str]) -> str:
+        return f"<span class='sop-file-name'>{match.group(1)}</span>"
+
+    return FILE_NAME_PATTERN.sub(replace_match, escaped)
+
+
+def render_rich_text_line(text: str, prefix: str = "") -> None:
+    content = highlight_file_names(text)
+    prefix_html = html.escape(prefix)
+    st.markdown(
+        f"<div class='sop-rich-line'>{prefix_html}{content}</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def is_required_md_field(field: str) -> bool:
     normalized = field.strip()
     return bool(re.fullmatch(r"test_step_[1-6]_(output|feature_file)\.md", normalized))
@@ -385,7 +439,10 @@ def _render_field(step_key: str, field: str, required: bool) -> None:
     state_key = f"{step_key}_{field_key}"
     current_value = st.session_state.form_data[step_key].get(field_key, "")
     label = f"{field} *" if required else field
-    st.markdown(f"<div class='sop-field-label'>{label}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='sop-field-label'>{highlight_file_names(label)}</div>",
+        unsafe_allow_html=True,
+    )
     entered = st.text_area(
         label=label,
         key=state_key,
@@ -411,7 +468,7 @@ def render_step_form(step_key: str) -> None:
             st.markdown("### Input")
             st.caption("Fixed step inputs")
             for field in step_inputs:
-                st.markdown(f"- {field}")
+                render_rich_text_line(field, prefix="- ")
 
         if step_optional_inputs:
             st.markdown("### Input Placeholders")
@@ -547,6 +604,14 @@ def build_prompt(current_step_key: str) -> str:
     return ""
 
 
+def render_prompt_preview(text: str) -> None:
+    preview_html = highlight_file_names(text) if text else ""
+    st.markdown(
+        f"<div class='sop-prompt-preview'>{preview_html}</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def render_copy_button(step_key: str, text: str) -> None:
         button_id = f"copy-btn-{step_key}"
         escaped_text = json.dumps(text)
@@ -644,6 +709,7 @@ def render_step_page(step_key: str) -> None:
         st.checkbox("Done", value=st.session_state.done_flags[step_key], disabled=True, key=f"done_{step_key}")
 
     st.markdown("### Prompt Output")
+    render_prompt_preview(st.session_state.generated_prompt_by_step[step_key])
     st.text_area(
         "Generated Prompt",
         value=st.session_state.generated_prompt_by_step[step_key],
