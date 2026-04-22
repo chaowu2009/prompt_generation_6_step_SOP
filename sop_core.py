@@ -356,9 +356,9 @@ def render_rich_text_line(text: str, prefix: str = "") -> None:
     )
 
 
-def is_required_md_field(field: str) -> bool:
+def is_workflow_artifact_input(field: str) -> bool:
     normalized = field.strip()
-    return bool(re.fullmatch(r"test_step_[1-6]_(output|feature_file)\.md", normalized))
+    return bool(re.fullmatch(r"test_step_[1-6]_output\.md", normalized)) or normalized == "test_step_3_gherkin.feature"
 
 
 def get_effective_field_value(step_key: str, field: str) -> str:
@@ -373,14 +373,6 @@ def resolve_input_for_prompt(step_key: str, field: str) -> str:
         return direct_value
 
     normalized = field.strip()
-    if normalized.lower().endswith((".md", ".feature", ".txt")):
-        candidate_path = BASE_DIR / normalized
-        if candidate_path.is_file():
-            file_text = candidate_path.read_text(encoding="utf-8").strip()
-            if file_text:
-                lang = "md" if normalized.lower().endswith(".md") else "gherkin" if normalized.lower().endswith(".feature") else "text"
-                return f"{normalized}\n```{lang}\n{file_text}\n```"
-
     return normalized
 
 
@@ -399,13 +391,6 @@ def get_step_inputs(step_key: str) -> List[str]:
 
 def get_step_optional_inputs(step_key: str) -> List[str]:
     return normalize_fields(STEP_CONFIG[step_key].get("optional_inputs"))
-
-
-def uses_fixed_input_mode(step_key: str) -> bool:
-    step_inputs = get_step_inputs(step_key)
-    has_optional_inputs = bool(get_step_optional_inputs(step_key))
-    has_md_only_inputs = bool(step_inputs) and all(is_required_md_field(field) for field in step_inputs)
-    return has_optional_inputs or has_md_only_inputs
 
 
 def ensure_state() -> None:
@@ -484,49 +469,31 @@ def render_step_form(step_key: str) -> None:
     step_inputs = get_step_inputs(step_key)
     step_optional_inputs = get_step_optional_inputs(step_key)
 
-    if uses_fixed_input_mode(step_key):
-        if step_inputs:
-            st.markdown("### Input")
-            for field in step_inputs:
-                render_rich_text_line(field, prefix="- ")
+    workflow_inputs = [field for field in step_inputs if is_workflow_artifact_input(field)]
+    editable_inputs = [field for field in step_inputs if not is_workflow_artifact_input(field)]
 
-        if step_optional_inputs:
-            st.markdown("### Input Placeholders")
-            st.caption("Optional — leave blank to omit from the generated prompt.")
-            for field in step_optional_inputs:
-                _render_field(step_key, field, required=False)
-    else:
-        required_fields = [f for f in step_inputs if is_required_md_field(f)]
-        optional_fields = [f for f in step_inputs if not is_required_md_field(f)]
+    if workflow_inputs:
+        st.markdown("### Input")
+        for field in workflow_inputs:
+            render_rich_text_line(field, prefix="- ")
 
-        if required_fields:
-            st.markdown("### Required Input Files")
-            st.caption("Paste the full content of each required file. Fields marked * must not be empty.")
-            for field in required_fields:
-                _render_field(step_key, field, required=True)
+    if editable_inputs:
+        st.markdown("### Input Fields")
+        st.caption("Fill these fields to include details in the generated prompt.")
+        for field in editable_inputs:
+            _render_field(step_key, field, required=False)
 
-        if optional_fields:
-            st.markdown("### Input Placeholders")
-            st.caption("Optional — leave blank to omit from the generated prompt.")
-            for field in optional_fields:
-                _render_field(step_key, field, required=False)
+    if step_optional_inputs:
+        st.markdown("### Input Placeholders")
+        st.caption("Optional — leave blank to omit from the generated prompt.")
+        for field in step_optional_inputs:
+            _render_field(step_key, field, required=False)
 
 
 def validate_required_inputs(step_key: str) -> List[str]:
-    missing: List[str] = []
-    step_inputs = get_step_inputs(step_key)
-
-    # Only enforce workflow-required markdown chain inputs.
-    required_fields = [f for f in step_inputs if is_required_md_field(f)]
-
-    for field in required_fields:
-        if field.strip().lower().endswith(".md"):
-            # Markdown inputs are assumed to be available from prior workflow.
-            continue
-        value = st.session_state.form_data.get(step_key, {}).get(slugify(field), "")
-        if not str(value).strip():
-            missing.append(field)
-    return missing
+    # Prompt generation is intentionally non-blocking.
+    # Workflow artifact inputs can be left blank while drafting prompts.
+    return []
 
 
 def build_step_0_prompt() -> str:
@@ -583,19 +550,15 @@ def build_step_prompt(step_key: str) -> str:
     step_inputs = get_step_inputs(step_key)
     step_optional_inputs = get_step_optional_inputs(step_key)
 
-    if uses_fixed_input_mode(step_key):
-        for item in step_inputs:
-            lines.append(f"- {resolve_input_for_prompt(step_key, item)}")
+    for item in step_inputs:
+        value = resolve_input_for_prompt(step_key, item)
+        if value:
+            lines.append(f"- {value}")
 
-        for item in step_optional_inputs:
-            value = resolve_input_for_prompt(step_key, item)
-            if value:
-                lines.append(f"- {value}")
-    else:
-        for item in step_inputs:
-            value = resolve_input_for_prompt(step_key, item)
-            if value:
-                lines.append(f"- {value}")
+    for item in step_optional_inputs:
+        value = get_effective_field_value(step_key, item)
+        if value:
+            lines.append(f"- {value}")
     lines.append("")
 
     lines.append("Output")
