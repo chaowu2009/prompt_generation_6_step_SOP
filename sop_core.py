@@ -1,9 +1,13 @@
 import json
 import html
 import re
+from pathlib import Path
 from typing import Any, Dict, List
 
 import streamlit as st
+
+
+BASE_DIR = Path(__file__).resolve().parent
 
 
 def apply_global_styles() -> None:
@@ -107,6 +111,7 @@ SHARED_CONTEXT = {
 }
 
 DEFAULT_RULES = [
+    "Use skills.md if available throughout each SOP step as the primary source for reusable workflow patterns and conventions whenever available. Recheck it before finalizing outputs. If it conflicts with current confirmed story inputs or 3-amigos decisions, prioritize current confirmed inputs and note the conflict.",
     "use the latest referenced .md file as the source of truth",
     "after each step, the user may review and revise the generated .md file",
     "each next step must use the latest reviewed .md file as the source of truth",
@@ -353,13 +358,30 @@ def render_rich_text_line(text: str, prefix: str = "") -> None:
 
 def is_required_md_field(field: str) -> bool:
     normalized = field.strip()
-    return bool(re.fullmatch(r"test_step_[1-6]_(output|feature_file)\.md|test_step_[1-6]_gherkin\.feature", normalized))
+    return bool(re.fullmatch(r"test_step_[1-6]_(output|feature_file)\.md", normalized))
 
 
 def get_effective_field_value(step_key: str, field: str) -> str:
     field_key = slugify(field)
     value = st.session_state.form_data.get(step_key, {}).get(field_key, "")
     return str(value).strip()
+
+
+def resolve_input_for_prompt(step_key: str, field: str) -> str:
+    direct_value = get_effective_field_value(step_key, field)
+    if direct_value:
+        return direct_value
+
+    normalized = field.strip()
+    if normalized.lower().endswith((".md", ".feature", ".txt")):
+        candidate_path = BASE_DIR / normalized
+        if candidate_path.is_file():
+            file_text = candidate_path.read_text(encoding="utf-8").strip()
+            if file_text:
+                lang = "md" if normalized.lower().endswith(".md") else "gherkin" if normalized.lower().endswith(".feature") else "text"
+                return f"{normalized}\n```{lang}\n{file_text}\n```"
+
+    return normalized
 
 
 def normalize_fields(fields: Any) -> List[str]:
@@ -494,10 +516,8 @@ def validate_required_inputs(step_key: str) -> List[str]:
     missing: List[str] = []
     step_inputs = get_step_inputs(step_key)
 
-    if uses_fixed_input_mode(step_key):
-        required_fields = step_inputs
-    else:
-        required_fields = [f for f in step_inputs if is_required_md_field(f)]
+    # Only enforce workflow-required markdown chain inputs.
+    required_fields = [f for f in step_inputs if is_required_md_field(f)]
 
     for field in required_fields:
         if field.strip().lower().endswith(".md"):
@@ -565,15 +585,15 @@ def build_step_prompt(step_key: str) -> str:
 
     if uses_fixed_input_mode(step_key):
         for item in step_inputs:
-            lines.append(f"- {item}")
+            lines.append(f"- {resolve_input_for_prompt(step_key, item)}")
 
         for item in step_optional_inputs:
-            value = get_effective_field_value(step_key, item)
+            value = resolve_input_for_prompt(step_key, item)
             if value:
                 lines.append(f"- {value}")
     else:
         for item in step_inputs:
-            value = get_effective_field_value(step_key, item)
+            value = resolve_input_for_prompt(step_key, item)
             if value:
                 lines.append(f"- {value}")
     lines.append("")
