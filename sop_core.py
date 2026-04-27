@@ -111,7 +111,7 @@ SHARED_CONTEXT = {
 }
 
 DEFAULT_RULES = [
-    "Use skills.md if available throughout each SOP step as the primary source for reusable workflow patterns and conventions whenever available. Recheck it before finalizing outputs. If it conflicts with current confirmed story inputs or 3-amigos decisions, prioritize current confirmed inputs and note the conflict.",
+    "Use SKILL.md if available throughout each SOP step as the primary source for reusable workflow patterns and conventions whenever available. Recheck it before finalizing outputs. If it conflicts with current confirmed story inputs or 3-amigos decisions, prioritize current confirmed inputs and note the conflict.",
     "use the latest referenced .md file as the source of truth",
     "after each step, the user may review and revise the generated .md file",
     "each next step must use the latest reviewed .md file as the source of truth",

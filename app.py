@@ -8,7 +8,24 @@ apply_global_styles()
 ensure_state()
 
 st.title("Java Test Framework SOP Prompt Generator")
-st.caption("Use the left Pages menu to open step_0 (Shared Context) through step_6 (Close). No dropdown is used.")
+st.caption("Open any workflow step or the standalone SKILL.md prompt page from here, or use the left Pages menu.")
+
+st.markdown("### Open a Page")
+
+step_columns = st.columns(4)
+for index, (step_key, config) in enumerate(STEP_CONFIG.items()):
+    step_num = step_key.split("_")[-1]
+    page_path = f"pages/step_{step_num}_({config['name'].replace(' ', '_')}).py"
+    with step_columns[index % len(step_columns)]:
+        st.page_link(
+            page=page_path,
+            label=f"Step {step_num} - {config['name']}",
+        )
+
+st.page_link(
+    page="pages/generate_SKILL_file.py",
+    label="Generate SKILL.md Prompt",
+)
 
 st.markdown("### Overall Progress")
 for step_key, config in STEP_CONFIG.items():
