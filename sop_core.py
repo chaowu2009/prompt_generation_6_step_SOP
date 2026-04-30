@@ -8,6 +8,7 @@ import streamlit as st
 
 
 BASE_DIR = Path(__file__).resolve().parent
+SOP_OUTPUT_DIR = "AI_SOP_Instruction"
 
 
 def apply_global_styles() -> None:
@@ -186,7 +187,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "preserve confirmed 3-amigos decisions",
             "if business behavior or scope is unclear, recommend 3 amigos follow-up",
         ],
-        "save_to": "test_step_1_output.md",
+        "save_to": f"{SOP_OUTPUT_DIR}/test_step_1_output.md",
     },
     "step_2": {
         "name": "Define",
@@ -206,7 +207,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "no code",
             "if ACs cannot be made testable from available facts, recommend 3 amigos follow-up",
         ],
-        "save_to": "test_step_2_output.md",
+        "save_to": f"{SOP_OUTPUT_DIR}/test_step_2_output.md",
     },
     "step_3": {
         "name": "Map",
@@ -237,7 +238,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "cover every AC without bloating scenarios",
             "name reuse options before suggesting new assets",
         ],
-        "save_to": "test_step_3_output.md",
+        "save_to": f"{SOP_OUTPUT_DIR}/test_step_3_output.md",
     },
     "step_4": {
         "name": "Plan",
@@ -266,7 +267,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "extend existing assets first",
             "keep changes minimal and parallel-safe",
         ],
-        "save_to": "test_step_4_output.md",
+        "save_to": f"{SOP_OUTPUT_DIR}/test_step_4_output.md",
     },
     "step_5": {
         "name": "Build",
@@ -293,7 +294,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "verify local and grid when required",
             "separate implemented work from follow-up recommendations",
         ],
-        "save_to": "test_step_5_output.md",
+        "save_to": f"{SOP_OUTPUT_DIR}/test_step_5_output.md",
     },
     "step_6": {
         "name": "Close",
@@ -322,7 +323,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "distinguish product issues from flaky or environment issues",
             "do not overstate completion",
         ],
-        "save_to": "test_step_6_output.md",
+        "save_to": f"{SOP_OUTPUT_DIR}/test_step_6_output.md",
     },
 }
 
