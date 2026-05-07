@@ -160,4 +160,3 @@ If you want to adapt the SOP:
 ## License
 
 No license file is currently included in this repository.
-"# prompt_generation_6_step_SOP" 

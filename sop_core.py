@@ -207,7 +207,7 @@ STEP_CONFIG: Dict[str, Dict[str, Any]] = {
             "no implementation details",
             "no code",
             "if ACs cannot be made testable from available facts, recommend 3 amigos follow-up",
-            "Save this exact prompt to AI_SOP_Instruction/prompt_step_1.md",
+            "Save this exact prompt to AI_SOP_Instruction/prompt_step_2.md",
         ],
         "save_to": f"{SOP_OUTPUT_DIR}/test_step_2_output.md",
     },
